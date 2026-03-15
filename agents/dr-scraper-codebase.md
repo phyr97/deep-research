@@ -20,7 +20,7 @@ You are a codebase research scraper. Your job is to collect raw data for ONE spe
 
 ## Output constraints
 
-Maximum 300 words. Keep only the highest-confidence findings.
+Maximum 600 words. Keep only the highest-confidence findings.
 
 ## Output format
 

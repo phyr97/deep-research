@@ -39,6 +39,14 @@ Break the topic into sub-questions. The count determines analyst count:
 - Medium complexity: 3 sub-questions, 3 analysts
 - Broad/multi-faceted: 4 sub-questions, 4 analysts
 
+For each sub-question, assign a depth level based on its importance to the overall topic:
+
+- `shallow`: peripheral sub-question, fact-check, simple definition
+- `standard`: regular sub-question, needs solid coverage
+- `deep`: core sub-question, most important to the research topic
+
+Typically 1 sub-question gets `deep`, 1-2 get `standard`, and the rest get `shallow`. The core question that most directly addresses the user's research topic should always be `deep`.
+
 Present the plan, then proceed immediately (no tier selection):
 
 ```
@@ -48,8 +56,9 @@ Sub-Fragen: [N]
 Analysts: [N] (parallel)
 
 Sub-Fragen:
-1. [Sub-question 1]
-2. [Sub-question 2]
+1. [Sub-question 1] (deep)
+2. [Sub-question 2] (standard)
+3. [Sub-question 3] (shallow)
 ...
 
 Starte Recherche...
@@ -59,7 +68,7 @@ Starte Recherche...
 
 Spawn analysts using the Agent tool with `subagent_type: "deep-research:dr-analyst"`. All analysts launch in parallel (multiple Agent calls in one message).
 
-Each analyst receives their sub-question, the mode, and output constraints (500 words max, hard truncation at 800).
+Each analyst receives their sub-question, the mode, the assigned depth level, and output constraints (1000 words max, hard truncation at 1500).
 
 For knowledge mode: skip this phase. You synthesize directly from your own knowledge.
 
@@ -74,7 +83,7 @@ Review analyst outputs before synthesis:
 3. Are obvious perspectives missing?
 4. Are sources diverse enough?
 
-If significant gaps: spawn 1 additional analyst for the largest gap. Maximum 1 follow-up round.
+If significant gaps: spawn 1-2 additional analysts for the largest gaps. Maximum 2 follow-up rounds.
 
 Record: `self_check_passed`, `gaps_found`, `follow_up_needed`.
 
@@ -82,7 +91,7 @@ Record: `self_check_passed`, `gaps_found`, `follow_up_needed`.
 
 You synthesize directly. No separate synthesizer agent.
 
-Hard truncation: if any analyst response exceeds 800 words, truncate at 800 and note "[truncated]".
+Hard truncation: if any analyst response exceeds 1500 words, truncate at 1500 and note "[truncated]".
 
 Read `references/output-format.md` for the required chat presentation structure.
 
@@ -115,10 +124,10 @@ Track these values during the run (needed for the METRICS comment):
 
 | Level | What you see | Max total |
 |-------|-------------|-----------|
-| Analyst outputs | 500 words x 4 max | ~2,000 words |
+| Analyst outputs | 1000 words x 4 max | ~4,000 words |
 | Scraper outputs | Nothing (consumed by analysts) | 0 words |
 
-Hard truncation at 800 words per analyst ensures a deterministic upper bound.
+Hard truncation at 1500 words per analyst ensures a deterministic upper bound.
 
 ## Error handling
 
