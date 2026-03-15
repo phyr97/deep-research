@@ -1,0 +1,15 @@
+{
+  "description": "Deep Research plugin hooks",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/save-metrics.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

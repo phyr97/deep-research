@@ -1,0 +1,8 @@
+{
+  "name": "deep-research",
+  "version": "0.4.0",
+  "description": "Modular deep research plugin for Claude Code with auto-scaling and self-check",
+  "author": {
+    "name": "phyr97"
+  }
+}
