@@ -22,15 +22,19 @@ Break your sub-question into 1-6 concrete scraping tasks. Decide for each:
 - In mixed mode, you may spawn both types
 
 ### 2. Spawn scrapers
-Spawn scrapers using the Agent tool:
-- Web scrapers: `subagent_type: "deep-research:dr-scraper-web"`
-- Codebase scrapers: `subagent_type: "deep-research:dr-scraper-codebase"`
-- Include in each scraper prompt:
-  - The specific question to answer
-  - The depth level: "Depth: [shallow/standard/deep]"
-  - Reminder: "Maximum 600 words output."
+Spawn scrapers using this exact pattern:
 
-Spawn scrapers in parallel when possible.
+```
+Agent(
+  subagent_type: "deep-research:dr-scraper-web",
+  model: "sonnet",
+  prompt: "Research the following question.\n\nQuestion: [SPECIFIC QUESTION]\nDepth: [shallow/standard/deep]\n\nMaximum 600 words output. Every fact MUST have a source URL."
+)
+```
+
+For codebase scrapers use `subagent_type: "deep-research:dr-scraper-codebase"` with `model: "sonnet"`.
+
+Always include `model: "sonnet"` explicitly. Always include the depth level. Spawn scrapers in parallel when possible.
 
 ### 3. Evaluate findings
 Once scrapers return:
@@ -57,10 +61,12 @@ If you have more material than fits in 1000 words, cut the lowest-confidence fin
 ### Findings
 [Clustered by theme, each finding with source reference and type tag (doc/blog/forum/github/code)]
 
-### Sources
-List every URL that supports your findings. This is mandatory. The orchestrator needs these URLs for the final report.
+### Sources (MANDATORY)
+List every URL from your scrapers that supports a finding. The orchestrator copies these into the final report. Without URLs, the orchestrator treats findings as unverified.
 - [type] Short description — URL
 - [code] File path (for codebase sources)
+
+Do NOT omit this section. Do NOT summarize as "sources from N scrapers".
 
 ### Confidence
 - [Theme A]: [high / medium / low]
