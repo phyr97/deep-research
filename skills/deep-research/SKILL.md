@@ -45,25 +45,29 @@ Modus: [Web / Codebase / Knowledge / Mixed]
 
 ### Step 2: Dispatch sub-agents
 
-Launch all sub-agents in parallel. The sub-agent .md files contain both frontmatter (model, tools, permissions) and a system prompt with output format examples. The `prompt` parameter reinforces the same instructions to maximize compliance:
+Launch all sub-agents in parallel. Each sub-agent writes its findings to a file in `/tmp/deep-research/` and returns the file path. This ensures URLs survive context compaction. Files are auto-cleaned by the OS on reboot.
+
+Use this pattern for each sub-agent:
 
 <example>
 Agent(
   subagent_type: "deep-research:dr-analyst",
   model: "sonnet",
-  prompt: "You research a question by spawning web and codebase lookup agents, evaluating their findings, and returning a summary with source URLs.
+  prompt: "You research a question by spawning web and codebase lookup agents, evaluating their findings, and writing a summary to a file.
 
 QUESTION: What pricing models do existing price elasticity tools use?
 MODE: web
 DEPTH: standard
+OUTPUT_FILE: /tmp/deep-research/analyst-1.md
 
 PROCESS:
 1. Break the question into 1-6 lookup tasks
-2. For each web task, spawn: Agent(subagent_type: 'deep-research:dr-scraper-codebaseraper-web', model: 'sonnet', prompt: '<the full web-lookup prompt below>')
+2. For each web task, spawn: Agent(subagent_type: 'deep-research:dr-scraper-web', model: 'sonnet', prompt: '<the full web-lookup prompt below>')
 3. For each codebase task, spawn: Agent(subagent_type: 'deep-research:dr-scraper-codebase', model: 'sonnet', prompt: '<the full codebase-lookup prompt below>')
 4. Spawn lookups in parallel when possible
 5. If results are thin (most returned fewer than 3 facts), spawn 1-2 more with rephrased queries
-6. Return your findings with every source URL included
+6. Write your full findings to OUTPUT_FILE using the Write tool
+7. Return only: DONE|/tmp/deep-research/analyst-1.md
 
 WEB-LOOKUP PROMPT TEMPLATE (copy this, fill in the question):
 \"\"\"
@@ -104,7 +108,7 @@ Output format (follow this exactly):
 Every fact needs a file path. Maximum 600 words.
 \"\"\"
 
-YOUR OUTPUT FORMAT (follow this exactly):
+FILE FORMAT (write this to OUTPUT_FILE):
 ### Findings
 [Clustered by theme. Each finding includes its source URL or file path inline.]
 
@@ -118,17 +122,28 @@ YOUR OUTPUT FORMAT (follow this exactly):
 ### Stats
 [N] lookups ([N] web, [N] codebase), [N] failed | Sources: [N] doc, [N] blog, [N] forum, [N] github, [N] code
 
-Maximum 1000 words. Cut lowest-confidence findings first."
+Maximum 1000 words. Cut lowest-confidence findings first.
+After writing the file, return ONLY: DONE|/tmp/deep-research/analyst-1.md"
 )
 </example>
 
-Adapt the QUESTION, MODE, and DEPTH fields for each sub-question. The rest of the prompt stays the same.
+Before dispatching, create the output directory: `mkdir -p /tmp/deep-research`
+
+Number the OUTPUT_FILE for each sub-agent (analyst-1.md, analyst-2.md, etc.). Adapt the QUESTION, MODE, and DEPTH fields per sub-question.
 
 For knowledge mode: skip this step, synthesize directly.
 
-### Step 3: Self-check
+### Step 3: Read results and self-check
 
-Before synthesizing, review sub-agent outputs:
+After all sub-agents complete, read each file they wrote:
+
+```
+Read /tmp/deep-research/analyst-1.md
+Read /tmp/deep-research/analyst-2.md
+...
+```
+
+Review the contents:
 - Are sub-questions adequately covered?
 - Are sources diverse?
 - Are there findings without URLs?
@@ -137,9 +152,9 @@ If significant gaps remain, spawn 1-2 follow-up sub-agents. Maximum 2 follow-up 
 
 ### Step 4: Synthesize and present
 
-Synthesize findings across sub-agents by theme, not by agent.
+Synthesize findings across the files by theme, not by agent.
 
-Present in chat using the structure from `references/output-format.md`. The Sources section at the end must list the actual URLs from sub-agent reports.
+Present in chat using the structure from `references/output-format.md`. The Sources section at the end must list the actual URLs from the analyst files. Since you read the files directly, these URLs are in your context.
 
 After presenting, ask: "Soll ich die Ergebnisse als Report speichern? (Datei wird unter ~/.claude/deep-research/ abgelegt)"
 
@@ -155,10 +170,11 @@ End your final response with:
 
 | Level | What you see | Max total |
 |-------|-------------|-----------|
-| Sub-agent outputs | 1000 words x 4 max | ~4,000 words |
+| Sub-agent outputs | DONE|path only | ~100 words |
+| File reads | 1000 words x 4 max | ~4,000 words |
 | Lookup outputs | Nothing (consumed by sub-agents) | 0 words |
 
-Truncate any sub-agent response over 1500 words.
+Sub-agents return only `DONE|{path}`. The orchestrator reads files on demand.
 
 ## Error handling
 
@@ -166,4 +182,4 @@ Read `references/error-handling.md` for failures, vague questions, and quality i
 
 ## Self-verification
 
-Before finishing, check: Does my response include a Sources section with URLs? Does it end with the METRICS comment? If either is missing, add it now.
+Before finishing, check: Does my response include a Sources section with URLs? Does it end with the METRICS comment? If either is missing, read the analyst files again and add the missing URLs.
