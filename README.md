@@ -1,17 +1,18 @@
 # Deep Research
 
-A modular [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for deep research across web, codebase, and knowledge domains. Uses a multi-level model routing strategy (Haiku, Sonnet, Opus) for cost-efficient, high-quality results.
+A modular [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for deep research across web, codebase, and knowledge domains. Uses Sonnet for analysts and scrapers, Opus for orchestration and synthesis.
 
 ## Features
 
 - Multi-mode research: web, codebase, knowledge synthesis, or mixed
 - Auto-scaling: 2-4 analysts based on topic complexity, no manual tier selection
-- Self-check: LLM-as-Judge validates synthesis before export, with optional follow-up round
+- Depth-per-question: orchestrator assigns shallow/standard/deep per sub-question so core questions get more thorough coverage
+- Iterative scraping: scrapers follow promising links and analysts retry with rephrased queries when results are thin
+- Self-check with up to 2 follow-up rounds to fill gaps
 - Metrics tracking: every run appends to ~/.claude/deep-research/metrics.jsonl
-- Automatic export: every research auto-saves to `~/.claude/deep-research/`
 - Follow-up support: continue previous research with `--follow-up`
 - Dynamic MCP detection: auto-discovers and uses available MCP servers (Tidewave, Context7, etc.)
-- Safe by design: agents only use read-only tools, validated against an allowlist
+- Safe by design: agents only use read-only tools
 
 ## Installation
 
@@ -67,40 +68,37 @@ These are all read-only tools. If you prefer not to allow them globally, the plu
 ```
 Orchestrator (Opus)
   │
-  ├── Analyst 1 (Sonnet) ──→ spawns Scraper 1a (Haiku/web), Scraper 1b (Sonnet/codebase)
-  │     └── returns: 500 words max, sources tagged by type
+  ├── Analyst 1 (Sonnet) ──→ spawns up to 6 scrapers (Sonnet/web, Sonnet/codebase)
+  │     └── returns: 1000 words max, sources tagged by type
   │
-  ├── Analyst 2 (Sonnet) ──→ spawns Scraper 2a (Haiku/web), Scraper 2b (Haiku/web)
-  │     └── returns: 500 words max, sources tagged by type
+  ├── Analyst 2 (Sonnet) ──→ spawns up to 6 scrapers, retries if results are thin
+  │     └── returns: 1000 words max, sources tagged by type
   │
-  ├── Self-Check (Opus) ──→ validates synthesis, optionally spawns 1 follow-up analyst
+  ├── Self-Check (Opus) ──→ validates synthesis, up to 2 follow-up rounds
   │
   └── Orchestrator synthesizes, exports, writes metrics
 ```
 
 Key design decisions:
 
-- Analysts own their scrapers: the orchestrator only sees compact analyst summaries (max 500 words each), never raw scraper data. This protects the orchestrator's context window.
+- Analysts own their scrapers: the orchestrator only sees compact analyst summaries (max 1000 words each), never raw scraper data. This protects the orchestrator's context window.
 - Orchestrator does synthesis: no separate synthesizer agent needed since the orchestrator already runs on Opus.
-- Specialized scrapers: web scrapers (Haiku) handle web lookups, codebase scrapers (Sonnet) handle code navigation.
-- Self-check before export: catches gaps and missing perspectives before the final report.
+- Depth-per-question: the orchestrator assigns shallow/standard/deep to each sub-question. Scrapers adjust search count and link-following accordingly.
+- Analyst retry: when scraper results are thin, analysts spawn additional scrapers with rephrased queries before giving up.
+- Self-check before export: catches gaps and missing perspectives, with up to 2 follow-up rounds.
 
 ### Research modes
 
-- Web: external information via WebSearch/WebFetch (Haiku scrapers)
+- Web: external information via WebSearch/WebFetch (Sonnet scrapers, depth-controlled)
 - Codebase: local code analysis via Read/Glob/Grep + optional Tidewave/Context7 (Sonnet scrapers)
 - Knowledge: Opus synthesizes directly from training data, optional web fact-checking (no analyst dispatch)
 - Mixed: analysts spawn both web and codebase scrapers for direct comparison
 
 ## Output
 
-Results are exported to `~/.claude/deep-research/YYYY-MM-DD-<topic-slug>.md` and presented interactively in chat. Every export starts with a Kernpunkte (Key Points) section for quick orientation.
+Results are presented interactively in chat with a Kernpunkte (Key Points) section for quick orientation, followed by detailed findings organized by theme.
 
-Metrics are collected automatically via a `Stop` hook that extracts metrics from the orchestrator's output and appends them to `~/.claude/deep-research/metrics.jsonl`. This is deterministic and cannot be skipped by the LLM.
-
-## MCP tools
-
-Research agents use `bypassPermissions` since they only use read-only tools. Known MCP tools (Tidewave, Context7) are detected by checking if `mcp__tidewave__*` or `mcp__context7__*` tools are available in the session. No dynamic discovery or allowlist matching needed.
+Metrics are collected automatically via a `Stop` hook that extracts metrics from the orchestrator's output and appends them to `~/.claude/deep-research/metrics.jsonl`.
 
 ## Plugin structure
 
@@ -111,18 +109,17 @@ deep-research/
   skills/
     deep-research/
       SKILL.md                               # Orchestrator skill
+      references/                            # Output format, research modes, error handling
   commands/
     deep-research.md                         # /deep-research slash command
   agents/
     dr-analyst.md                            # Analyst agent (Sonnet)
-    dr-scraper-web.md                        # Web scraper agent (Haiku)
+    dr-scraper-web.md                        # Web scraper agent (Sonnet)
     dr-scraper-codebase.md                   # Codebase scraper agent (Sonnet)
   hooks/
     hooks.json                               # Stop hook for metrics collection
   scripts/
     save-metrics.sh                          # Extracts metrics from output, writes to jsonl
-  docs/
-    video-skill-best-practices.md            # Skill design patterns reference
 ```
 
 ## License
