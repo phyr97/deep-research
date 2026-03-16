@@ -5,14 +5,13 @@ A modular [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin f
 ## Features
 
 - Multi-mode research: web, codebase, knowledge synthesis, or mixed
-- Auto-scaling: 2-4 analysts based on topic complexity, no manual tier selection
+- Auto-scaling: 2-4 analysts based on topic complexity
 - Depth-per-question: orchestrator assigns shallow/standard/deep per sub-question so core questions get more thorough coverage
 - Iterative scraping: scrapers follow promising links and analysts retry with rephrased queries when results are thin
-- Self-check with up to 2 follow-up rounds to fill gaps
+- Source verification: every finding must link to a URL or file path, enforced by a stop hook
+- Few-shot prompted agents: agents follow concrete output examples instead of rule lists for more consistent results
 - Metrics tracking: every run appends to ~/.claude/deep-research/metrics.jsonl
-- Follow-up support: continue previous research with `--follow-up`
-- Dynamic MCP detection: auto-discovers and uses available MCP servers (Tidewave, Context7, etc.)
-- Safe by design: agents only use read-only tools
+- Optional report export: save research as markdown file on request
 
 ## Installation
 
@@ -26,7 +25,6 @@ claude plugin install deep-research@phyr97
 ### Manual (for development)
 
 ```bash
-# Use the plugin from a local directory for one session
 claude --plugin-dir /path/to/deep-research
 ```
 
@@ -48,8 +46,6 @@ Claude Code has known issues with `bypassPermissions` for subagents (see [#29110
 }
 ```
 
-These are all read-only tools. If you prefer not to allow them globally, the plugin will still work in most cases via the `bypassPermissions` frontmatter, but some runs may fail with permission errors.
-
 ## Usage
 
 ```bash
@@ -58,9 +54,6 @@ These are all read-only tools. If you prefer not to allow them globally, the plu
 
 # Force a specific mode
 /deep-research --mode codebase "Map all GenServer processes in this project"
-
-# Follow up on previous research
-/deep-research --follow-up 2026-02-22-caching-strategien "Go deeper into Redis vs ETS"
 ```
 
 ## Architecture
@@ -68,37 +61,30 @@ These are all read-only tools. If you prefer not to allow them globally, the plu
 ```
 Orchestrator (Opus)
   │
-  ├── Analyst 1 (Sonnet) ──→ spawns up to 6 scrapers (Sonnet/web, Sonnet/codebase)
-  │     └── returns: 1000 words max, sources tagged by type
-  │
-  ├── Analyst 2 (Sonnet) ──→ spawns up to 6 scrapers, retries if results are thin
-  │     └── returns: 1000 words max, sources tagged by type
-  │
-  ├── Self-Check (Opus) ──→ validates synthesis, up to 2 follow-up rounds
-  │
-  └── Orchestrator synthesizes, exports, writes metrics
+  ├── Analyst 1 (Sonnet) ──→ spawns 1-6 scrapers (Sonnet), retries if thin
+  ├── Analyst 2 (Sonnet) ──→ spawns 1-6 scrapers (Sonnet), retries if thin
+  ├── Self-check ──→ reviews coverage, spawns follow-up analysts if needed
+  └── Synthesize ──→ merge findings by theme, list source URLs, write metrics
 ```
 
-Key design decisions:
+Each tier only sees the output of the tier below (analysts see scraper output, orchestrator sees analyst summaries). Raw scraper data never reaches the orchestrator.
 
-- Analysts own their scrapers: the orchestrator only sees compact analyst summaries (max 1000 words each), never raw scraper data. This protects the orchestrator's context window.
-- Orchestrator does synthesis: no separate synthesizer agent needed since the orchestrator already runs on Opus.
-- Depth-per-question: the orchestrator assigns shallow/standard/deep to each sub-question. Scrapers adjust search count and link-following accordingly.
-- Analyst retry: when scraper results are thin, analysts spawn additional scrapers with rephrased queries before giving up.
-- Self-check before export: catches gaps and missing perspectives, with up to 2 follow-up rounds.
+The orchestrator assigns a depth level (shallow/standard/deep) per sub-question. Analysts pass this to their web scrapers, which adjust search count and link-following accordingly.
 
 ### Research modes
 
-- Web: external information via WebSearch/WebFetch (Sonnet scrapers, depth-controlled)
-- Codebase: local code analysis via Read/Glob/Grep + optional Tidewave/Context7 (Sonnet scrapers)
-- Knowledge: Opus synthesizes directly from training data, optional web fact-checking (no analyst dispatch)
-- Mixed: analysts spawn both web and codebase scrapers for direct comparison
+- Web: external information via WebSearch/WebFetch (depth-controlled)
+- Codebase: local code analysis via Read/Glob/Grep
+- Knowledge: Opus synthesizes directly from training data (no analyst dispatch)
+- Mixed: analysts spawn both web and codebase scrapers
 
-## Output
+## Enforcement
 
-Results are presented interactively in chat with a Kernpunkte (Key Points) section for quick orientation, followed by detailed findings organized by theme.
+Agent compliance is enforced through three mechanisms:
 
-Metrics are collected automatically via a `Stop` hook that extracts metrics from the orchestrator's output and appends them to `~/.claude/deep-research/metrics.jsonl`.
+1. Few-shot examples in agent prompts show the exact expected output format including source URLs
+2. A stop hook (`check-sources.sh`) blocks completion if a research output is missing a Sources section with URLs
+3. A second stop hook (`save-metrics.sh`) extracts metrics from the output for tracking
 
 ## Plugin structure
 
@@ -117,9 +103,10 @@ deep-research/
     dr-scraper-web.md                        # Web scraper agent (Sonnet)
     dr-scraper-codebase.md                   # Codebase scraper agent (Sonnet)
   hooks/
-    hooks.json                               # Stop hook for metrics collection
+    hooks.json                               # Stop hooks for validation and metrics
   scripts/
-    save-metrics.sh                          # Extracts metrics from output, writes to jsonl
+    check-sources.sh                         # Blocks completion if Sources section missing
+    save-metrics.sh                          # Extracts metrics from output to jsonl
 ```
 
 ## License
