@@ -1,6 +1,6 @@
 # Output format
 
-Present results in chat using this structure. All sections are required.
+Present results in chat using this structure.
 
 ## Kernpunkte
 
@@ -15,20 +15,18 @@ Present results in chat using this structure. All sections are required.
 
 ## Findings
 
-Organize by theme (not by analyst). Each theme gets a subsection with the relevant details, evidence, and source references.
+Organize by theme (not by analyst). Each theme gets a subsection with relevant details, evidence, and inline source references.
 
 ## Contradictions & Open Questions
 
-List areas where sources disagree or where the research could not reach a clear conclusion.
+Areas where sources disagree or where the research could not reach a clear conclusion.
 
 ## Sources
 
-List ALL sources from analyst reports with type tags and actual URLs. This section is mandatory and must contain real, clickable URLs. Never summarize this as "N sources from scrapers" or similar.
+List the URLs from analyst reports. This section makes the research verifiable.
 
 - [doc] Title — URL
 - [blog] Title — URL
 - [forum] Title — URL
 - [github] Title — URL
-- [code] File path or module name (for codebase sources)
-
-If an analyst reported a finding without a URL, mark it as [unverified] and include the finding's context so the user can search manually.
+- [code] File path (for codebase sources)
