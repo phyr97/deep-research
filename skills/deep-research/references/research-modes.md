@@ -1,13 +1,13 @@
 # Research modes
 
 ## Web research
-- Sub-agents spawn web lookups via `subagent_type: "deep-research:dr-sw"`
+- Sub-agents spawn web lookups via `subagent_type: "deep-research:dr-scraper-codebaseraper-web"`
 - Lookups collect facts, URLs, snippets with source type tags
 - Sub-agents cluster and evaluate
 - Each lookup receives a depth level (shallow/standard/deep) that controls search count and link-following
 
 ## Codebase analysis
-- Sub-agents spawn codebase lookups via `subagent_type: "deep-research:dr-sc"`
+- Sub-agents spawn codebase lookups via `subagent_type: "deep-research:dr-scraper-codebase"`
 - Lookups navigate code, extract patterns, find dependencies
 - Sub-agents build focused analysis of their area
 

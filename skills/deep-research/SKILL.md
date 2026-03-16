@@ -45,13 +45,11 @@ Modus: [Web / Codebase / Knowledge / Mixed]
 
 ### Step 2: Dispatch sub-agents
 
-Launch all sub-agents in parallel. The sub-agent .md files contain only frontmatter (model, tools, permissions). All instructions must go in the `prompt` parameter because the agent body is not reliably passed to the sub-agent.
-
-Use this exact pattern for each sub-agent. The full prompt is critical because it is the ONLY instruction the sub-agent will see:
+Launch all sub-agents in parallel. The sub-agent .md files contain both frontmatter (model, tools, permissions) and a system prompt with output format examples. The `prompt` parameter reinforces the same instructions to maximize compliance:
 
 <example>
 Agent(
-  subagent_type: "deep-research:dr-a1",
+  subagent_type: "deep-research:dr-analyst",
   model: "sonnet",
   prompt: "You research a question by spawning web and codebase lookup agents, evaluating their findings, and returning a summary with source URLs.
 
@@ -61,8 +59,8 @@ DEPTH: standard
 
 PROCESS:
 1. Break the question into 1-6 lookup tasks
-2. For each web task, spawn: Agent(subagent_type: 'deep-research:dr-sw', model: 'sonnet', prompt: '<the full web-lookup prompt below>')
-3. For each codebase task, spawn: Agent(subagent_type: 'deep-research:dr-sc', model: 'sonnet', prompt: '<the full codebase-lookup prompt below>')
+2. For each web task, spawn: Agent(subagent_type: 'deep-research:dr-scraper-codebaseraper-web', model: 'sonnet', prompt: '<the full web-lookup prompt below>')
+3. For each codebase task, spawn: Agent(subagent_type: 'deep-research:dr-scraper-codebase', model: 'sonnet', prompt: '<the full codebase-lookup prompt below>')
 4. Spawn lookups in parallel when possible
 5. If results are thin (most returned fewer than 3 facts), spawn 1-2 more with rephrased queries
 6. Return your findings with every source URL included
