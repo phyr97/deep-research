@@ -47,8 +47,10 @@ Maximum 600 words. Keep only the highest-confidence findings.
 ## Output format
 
 ### Facts
-1. [Concrete finding with source URL] (type: doc/blog/forum/github)
+1. [Concrete finding] — [Source URL] (type: doc/blog/forum/github)
 2. ...
+
+Every fact MUST have a source URL. If you cannot attribute a finding to a specific URL, do not include it.
 
 ### Issues
 - [Only if there are inaccessible sources or data gaps]

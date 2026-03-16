@@ -68,7 +68,12 @@ Starte Recherche...
 
 Spawn analysts using the Agent tool with `subagent_type: "deep-research:dr-analyst"`. All analysts launch in parallel (multiple Agent calls in one message).
 
-Each analyst receives their sub-question, the mode, the assigned depth level, and output constraints (1000 words max, hard truncation at 1500).
+Each analyst prompt MUST include:
+- The sub-question
+- The mode (web/codebase/mixed)
+- The depth level from Phase 2 (e.g. "Depth: deep"). This is NOT optional. If you forget the depth level, the scraper defaults to shallow and the research quality suffers.
+- Output constraints: 1000 words max, hard truncation at 1500
+- Instruction to include all source URLs in their output
 
 For knowledge mode: skip this phase. You synthesize directly from your own knowledge.
 
@@ -104,9 +109,19 @@ Step 1 - Present in chat using the structure from `references/output-format.md`:
 - Executive Summary (3-5 sentences)
 - Detailed Findings by theme
 - Contradictions and open questions
-- Sources with type tags
+- Sources with type tags and URLs (collected from analyst outputs)
 
-Step 2 - End your FINAL response with the METRICS comment (Iron Law #1):
+The Sources section MUST include the actual URLs from the analyst reports. Do not summarize sources as "30+ Scrapers" or similar. List every URL that supports a finding in the report.
+
+Step 2 - Ask the user if they want a report file:
+
+"Soll ich die Ergebnisse als Report speichern? (Datei wird unter ~/.claude/deep-research/ abgelegt)"
+
+If yes, write the full research output as a markdown file to `~/.claude/deep-research/YYYY-MM-DD-<topic-slug>.md`. The file should contain the same content as the chat output.
+
+If the user does not respond or declines, skip the file export.
+
+Step 3 - End your FINAL response with the METRICS comment (Iron Law #1):
 
 `<!-- METRICS:{"topic":"...","mode":"...","analysts":N,"scrapers":N,"scraper_errors":N,"sources_total":N,"sources_by_type":{"doc":N,"blog":N,"forum":N,"github":N,"code":N},"gaps_found":N,"self_check_passed":BOOL,"follow_up_needed":BOOL} -->`
 

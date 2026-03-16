@@ -57,6 +57,11 @@ If you have more material than fits in 1000 words, cut the lowest-confidence fin
 ### Findings
 [Clustered by theme, each finding with source reference and type tag (doc/blog/forum/github/code)]
 
+### Sources
+List every URL that supports your findings. This is mandatory. The orchestrator needs these URLs for the final report.
+- [type] Short description — URL
+- [code] File path (for codebase sources)
+
 ### Confidence
 - [Theme A]: [high / medium / low]
 - [Theme B]: [high / medium / low]

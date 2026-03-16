@@ -23,9 +23,12 @@ List areas where sources disagree or where the research could not reach a clear 
 
 ## Sources
 
-List all sources with type tags:
-- [doc] Title - URL
-- [blog] Title - URL
-- [forum] Title - URL
-- [github] Title - URL
+List ALL sources from analyst reports with type tags and actual URLs. This section is mandatory and must contain real, clickable URLs. Never summarize this as "N sources from scrapers" or similar.
+
+- [doc] Title — URL
+- [blog] Title — URL
+- [forum] Title — URL
+- [github] Title — URL
 - [code] File path or module name (for codebase sources)
+
+If an analyst reported a finding without a URL, mark it as [unverified] and include the finding's context so the user can search manually.
