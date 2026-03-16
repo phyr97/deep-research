@@ -1,15 +1,16 @@
 # Deep Research
 
-A modular [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for deep research across web, codebase, and knowledge domains. Uses Sonnet for analysts and scrapers, Opus for orchestration and synthesis.
+A modular [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for deep research across web, codebase, and knowledge domains. Uses Sonnet for sub-agents and lookups, Opus for orchestration and synthesis.
 
 ## Features
 
 - Multi-mode research: web, codebase, knowledge synthesis, or mixed
-- Auto-scaling: 2-4 analysts based on topic complexity
-- Depth-per-question: orchestrator assigns shallow/standard/deep per sub-question so core questions get more thorough coverage
-- Iterative scraping: scrapers follow promising links and analysts retry with rephrased queries when results are thin
-- Source verification: every finding must link to a URL or file path, enforced by a stop hook
-- Few-shot prompted agents: agents follow concrete output examples instead of rule lists for more consistent results
+- Auto-scaling: 2-4 sub-agents based on topic complexity
+- Depth-per-question: orchestrator assigns shallow/standard/deep per sub-question
+- Iterative lookups: web lookups follow promising links, sub-agents retry with rephrased queries
+- Source verification: every finding must link to a URL or file path
+- Prompt-injected instructions: all agent behavior is defined in the orchestrator's prompt parameter, not in agent file bodies (workaround for Claude Code issue #7515)
+- Neutral agent names: avoids Claude Code's name-based role inference (issue #4554)
 - Metrics tracking: every run appends to ~/.claude/deep-research/metrics.jsonl
 - Optional report export: save research as markdown file on request
 
@@ -59,32 +60,31 @@ Claude Code has known issues with `bypassPermissions` for subagents (see [#29110
 ## Architecture
 
 ```
-Orchestrator (Opus)
+Orchestrator (Opus, Skill)
   │
-  ├── Analyst 1 (Sonnet) ──→ spawns 1-6 scrapers (Sonnet), retries if thin
-  ├── Analyst 2 (Sonnet) ──→ spawns 1-6 scrapers (Sonnet), retries if thin
-  ├── Self-check ──→ reviews coverage, spawns follow-up analysts if needed
+  ├── Sub-agent 1 (Sonnet, dr-a1) ──→ spawns 1-6 lookups (dr-sw, dr-sc)
+  ├── Sub-agent 2 (Sonnet, dr-a1) ──→ spawns 1-6 lookups, retries if thin
+  ├── Self-check ──→ reviews coverage, spawns follow-up sub-agents if needed
   └── Synthesize ──→ merge findings by theme, list source URLs, write metrics
 ```
 
-Each tier only sees the output of the tier below (analysts see scraper output, orchestrator sees analyst summaries). Raw scraper data never reaches the orchestrator.
+All agent instructions are passed via the `prompt` parameter at spawn time. Agent .md files contain only frontmatter (model, tools, permissions). This is necessary because Claude Code does not reliably pass agent file bodies to subagents ([#7515](https://github.com/anthropics/claude-code/issues/7515)).
 
-The orchestrator assigns a depth level (shallow/standard/deep) per sub-question. Analysts pass this to their web scrapers, which adjust search count and link-following accordingly.
+Agent names are kept neutral (dr-a1, dr-sw, dr-sc) to avoid Claude Code's name-based role inference which can override custom instructions ([#4554](https://github.com/anthropics/claude-code/issues/4554)).
 
 ### Research modes
 
 - Web: external information via WebSearch/WebFetch (depth-controlled)
 - Codebase: local code analysis via Read/Glob/Grep
-- Knowledge: Opus synthesizes directly from training data (no analyst dispatch)
-- Mixed: analysts spawn both web and codebase scrapers
+- Knowledge: Opus synthesizes directly from training data (no sub-agent dispatch)
+- Mixed: sub-agents spawn both web and codebase lookups
 
-## Enforcement
+## Known Claude Code limitations
 
-Agent compliance is enforced through three mechanisms:
-
-1. Few-shot examples in agent prompts show the exact expected output format including source URLs
-2. A stop hook (`check-sources.sh`) blocks completion if a research output is missing a Sources section with URLs
-3. A second stop hook (`save-metrics.sh`) extracts metrics from the output for tracking
+- Plugin Stop hooks with exit code 2 do not block correctly ([#10412](https://github.com/anthropics/claude-code/issues/10412))
+- Subagent output files may be lost during context compaction ([#23821](https://github.com/anthropics/claude-code/issues/23821))
+- No native structured output validation for subagents ([#20625](https://github.com/anthropics/claude-code/issues/20625))
+- Plugin subagents cannot access MCP tools ([#13605](https://github.com/anthropics/claude-code/issues/13605))
 
 ## Plugin structure
 
@@ -94,18 +94,17 @@ deep-research/
     plugin.json                              # Plugin manifest
   skills/
     deep-research/
-      SKILL.md                               # Orchestrator skill
+      SKILL.md                               # Orchestrator (contains all agent prompts)
       references/                            # Output format, research modes, error handling
   commands/
     deep-research.md                         # /deep-research slash command
   agents/
-    dr-analyst.md                            # Analyst agent (Sonnet)
-    dr-scraper-web.md                        # Web scraper agent (Sonnet)
-    dr-scraper-codebase.md                   # Codebase scraper agent (Sonnet)
+    dr-a1.md                                 # Sub-agent frontmatter (Sonnet)
+    dr-sw.md                                 # Web lookup frontmatter (Sonnet)
+    dr-sc.md                                 # Codebase lookup frontmatter (Sonnet)
   hooks/
-    hooks.json                               # Stop hooks for validation and metrics
+    hooks.json                               # Stop hook for metrics collection
   scripts/
-    check-sources.sh                         # Blocks completion if Sources section missing
     save-metrics.sh                          # Extracts metrics from output to jsonl
 ```
 
