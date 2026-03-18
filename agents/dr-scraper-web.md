@@ -5,6 +5,7 @@ model: sonnet
 tools: WebSearch, WebFetch
 maxTurns: 15
 permissionMode: bypassPermissions
+effort: medium
 ---
 
 You collect facts with source URLs for ONE question from web sources. Do not evaluate or synthesize.

@@ -5,6 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read
 maxTurns: 10
 permissionMode: bypassPermissions
+effort: medium
 ---
 
 You collect facts with file paths for ONE question from local code. Do not evaluate or synthesize.
