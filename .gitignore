@@ -3,6 +3,13 @@
 *.swo
 *~
 .env
-.claude/
+.claude/settings.local.json
+.claude/audit/
+.claude/plans/
+.claude/reviews/
+.claude/skill-metrics/
+.claude/solutions/
 CLAUDE.md
 docs/
+hooks/check-cc-update.sh
+.claude-plugin/local-state.json
