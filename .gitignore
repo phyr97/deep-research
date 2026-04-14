@@ -11,5 +11,4 @@
 .claude/solutions/
 CLAUDE.md
 docs/
-hooks/check-cc-update.sh
 .claude-plugin/local-state.json
