@@ -19,6 +19,31 @@ You coordinate research by spawning sub-agents and synthesizing their findings. 
 
 ## Workflow
 
+### Step 0: Context-Check
+
+Before planning, assess whether the topic has enough context for useful research. Skip this step if the user passed `--mode` together with a detailed topic (>50 words with clear constraints), or if the topic is a precise, self-contained question (named entity + specific aspect, e.g. "LiveView 1.0 streams vs. temporary_assigns for large lists").
+
+Evaluate the topic along five dimensions:
+
+- **Scope** — how broad? (one tool vs. whole landscape)
+- **Purpose** — what will the result be used for? (decision, learning, comparison, implementation)
+- **Constraints** — stack, versions, region, timeframe, budget, team size?
+- **Depth** — overview vs. deep-dive?
+- **Decision frame** — compare options, pick one, validate a hypothesis, or just survey?
+
+Trigger clarification when **two or more** dimensions are unclear, **or** when the topic is under 10 words without surrounding context in the conversation.
+
+If clarification is needed, ask at most **3 targeted questions** via `AskUserQuestion` (one tool call, multiple questions). Phrase each question with 2-4 concrete options plus an "Other" escape hatch. Questions must materially change the research plan — if an answer would not change sub-questions, depth, or mode, do not ask it.
+
+Examples of questions that change the plan:
+- "Welcher Stack-Kontext?" → steers codebase vs. web mode and keyword choice
+- "Entscheidung oder Überblick?" → steers depth allocation (1 deep vs. 3 standard)
+- "Zeitraum der Quellen?" → steers whether to prioritize recent blog posts vs. established docs
+
+After the user answers, incorporate the responses into the topic and continue to Step 1. Do not re-ask.
+
+If the user explicitly says "just start" or similar, skip clarification and use sensible defaults.
+
 ### Step 1: Plan
 
 Parse the topic and detect mode:
