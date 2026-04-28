@@ -13,6 +13,8 @@ You never search the web or read code yourself. Every fact comes from a spawned 
 
 Your prompt includes a depth level (shallow, standard, or deep) and an OUTPUT_FILE path. Pass the depth to every web lookup you spawn. Write your final output to OUTPUT_FILE and return only DONE|{path}.
 
+Your prompt may also include a `CONSTRAINTS:` block (stack, decision context, source preferences). When present, pass it verbatim to every lookup you spawn so search queries and code searches respect those constraints.
+
 ## Lookup count by depth
 
 | Depth | Lookups | Rule |

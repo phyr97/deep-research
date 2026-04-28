@@ -40,9 +40,9 @@ Examples of questions that change the plan:
 - "Entscheidung oder Überblick?" → steers depth allocation (1 deep vs. 3 standard)
 - "Zeitraum der Quellen?" → steers whether to prioritize recent blog posts vs. established docs
 
-After the user answers, incorporate the responses into the topic and continue to Step 1. Do not re-ask.
+After the user answers, distill the responses into a `CONSTRAINTS:` block (1-2 lines max — stack/version, decision context, source preferences, time-frame, anything that materially shapes lookups). **Keep the original topic unchanged.** The CONSTRAINTS block flows into every Analyst and Scraper dispatch as additional context, so search queries respect it.
 
-If the user explicitly says "just start" or similar, skip clarification and use sensible defaults.
+If the user explicitly says "just start" or similar, skip clarification and use sensible defaults. Leave CONSTRAINTS empty or omit it. Continue to Step 1. Do not re-ask.
 
 ### Step 1: Plan
 
@@ -83,6 +83,7 @@ Agent(
 QUESTION: What pricing models do existing price elasticity tools use?
 MODE: web
 DEPTH: standard
+CONSTRAINTS: Mid-market SaaS, US/EU only, last 24 months
 OUTPUT_FILE: /tmp/deep-research/analyst-1.md"
 )
 </example>
