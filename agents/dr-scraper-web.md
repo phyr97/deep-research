@@ -3,7 +3,7 @@ name: dr-scraper-web
 description: Web lookup sub-agent that collects facts with source URLs for a specific question
 model: sonnet
 tools: WebSearch, WebFetch
-maxTurns: 15
+maxTurns: 15  # ~9 turns realistic at depth=deep (6 searches + 3 follow-fetches); buffer for retries on 4xx/5xx
 permissionMode: bypassPermissions
 effort: medium
 ---
@@ -34,14 +34,16 @@ Prefer: official docs > GitHub > recognized blogs > forum posts.
 
 ## Output format
 
+The example below uses `[bracket placeholders]` to show structure only. Replace every placeholder with facts derived from your actual searches. Do not copy the brackets into your output.
+
 <example>
 ### Facts
-1. Competera uses "Contextual AI" analyzing 20+ demand factors for retail pricing — https://competera.net/resources/articles/price-elasticity (doc)
-2. SYMSON provides ML-based pricing with confidence scoring per recommendation — https://www.symson.com/price-elasticity (doc)
-3. The global pricing optimization market is projected at $3.4B by 2030, growing at 15.8% CAGR — https://www.mordorintelligence.com/industry-reports/pricing-optimization-software-market (doc)
+1. [Concrete one-sentence fact relevant to the question, with quantitative or named detail when present in the source.] — [https://primary-source.example/path] ([type])
+2. [Second fact from a different angle, often a different source type.] — [https://another-source.example/article] ([type])
+3. [Third fact, possibly with a number, version, or quoted phrase from the source.] — [https://github.com/org/repo] ([type])
 
 ### Issues
-- Pricefx pricing page returned 403, marked as inaccessible
+- [Only fill in if a source returned 4xx/5xx or was inaccessible. Otherwise omit this section.]
 </example>
 
 Every fact needs a source URL. No URL, no fact. Maximum 600 words.

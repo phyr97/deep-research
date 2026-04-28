@@ -3,7 +3,7 @@ name: dr-analyst
 description: Research sub-agent that coordinates web and codebase lookups for a specific question
 model: sonnet
 tools: Agent, Read, Write
-maxTurns: 20
+maxTurns: 20  # ~12 turns realistic (5 spawns + 5 reads + write); 67% buffer for retries
 permissionMode: bypassPermissions
 ---
 
@@ -41,28 +41,26 @@ The floor for `deep` is hard. The ceilings are soft — exceed them only if the 
 
 Write this to OUTPUT_FILE. The orchestrator reads this file to build the final report, so include every URL.
 
+The example below uses `[bracket placeholders]` to show structure only. Replace every placeholder with content derived from your actual lookups. Do not copy the brackets into your output.
+
 <example>
 ### Findings
 
-**Enterprise pricing tools**
-PROS offers AI-based price optimization for manufacturing and airlines, with elasticity heatmaps and what-if simulations. Pricing starts at $100k+ annually. — https://pros.com/pricing-solutions (doc)
+**[Theme A — cluster name derived from your sub-question]**
+[First finding stated in 1-2 sentences, anchored by a single primary source.] — [https://primary-source.example/path] ([type])
 
-Pricefx is a cloud-native platform focusing on modular APIs for manufacturing and retail. — https://www.pricefx.com/product (doc)
+[Second finding adding nuance or contrast, with its own source.] — [https://secondary-source.example/article] ([type])
 
-**SMB monitoring tools**
-Prisync tracks competitor prices starting at $49/month but offers limited elasticity analysis. — https://prisync.com/pricing (doc)
+**[Theme B — a distinct angle on the same sub-question]**
+[Third finding from a different source, possibly cross-referencing the others.] — [https://third-source.example/page] ([type])
 
 ### Sources
-- [doc] PROS pricing solutions — https://pros.com/pricing-solutions
-- [doc] Pricefx product overview — https://www.pricefx.com/product
-- [doc] Prisync pricing — https://prisync.com/pricing
-
-### Confidence
-- Enterprise tools: high
-- SMB tools: medium
+- [type] [Primary source title] — [https://primary-source.example/path]
+- [type] [Secondary source title] — [https://secondary-source.example/article]
+- [type] [Third source title] — [https://third-source.example/page]
 
 ### Stats
-4 lookups (3 web, 1 codebase), 0 failed | Sources: 3 doc, 0 blog, 0 forum, 0 github, 0 code
+[N] lookups ([N] web, [N] codebase), [N] failed | Sources: [N] doc, [N] blog, [N] forum, [N] github, [N] code
 </example>
 
-Maximum 1000 words. Cut lowest-confidence findings first.
+Maximum 1000 words. Cut findings backed by only weak sources (forum/social only) first when trimming.

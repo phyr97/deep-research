@@ -1,15 +1,26 @@
 #!/bin/bash
 # Extracts METRICS JSON from the Stop hook payload and appends to metrics.jsonl.
 # Called by the Stop hook after every response. Only acts if <!-- METRICS:{...} --> is present.
+# Fast path: bash pattern match before any python invocation.
 
 METRICS_FILE="$HOME/.claude/deep-research/metrics.jsonl"
+
+# Read stdin once
+input=$(cat)
+
+# Fast prefilter: skip python entirely if no METRICS marker present.
+# Saves ~50-100ms python startup on every unrelated Stop event.
+case "$input" in
+    *'<!-- METRICS:'*) ;;
+    *) exit 0 ;;
+esac
 
 if ! command -v python3 &>/dev/null; then
     exit 0
 fi
 
-# Read hook payload from stdin, parse JSON properly, extract metrics
-metrics=$(python3 -c "
+# Parse JSON properly, extract metrics
+metrics=$(printf '%s' "$input" | python3 -c "
 import sys, json, re
 try:
     data = json.load(sys.stdin)

@@ -106,12 +106,16 @@ Read /tmp/deep-research/analyst-2.md
 ...
 ```
 
-Review the contents:
-- Are sub-questions adequately covered?
-- Are sources diverse?
-- Are there findings without URLs?
+Apply these **hard triggers** — if any fires for a sub-question, spawn one follow-up analyst targeting that sub-question:
 
-If significant gaps remain, spawn 1-2 follow-up sub-agents. Maximum 2 follow-up rounds.
+1. **Missing file** — `analyst-N.md` doesn't exist or is empty (scraper crash chain).
+2. **Source famine** — sub-question has fewer than 3 sources total in its file.
+3. **Source monoculture** — sub-question has only blog/forum sources and zero doc/github/code. Spawn the follow-up with a query biased toward authoritative sources.
+4. **Insufficient data marker** — analyst report contains the phrase "insufficient data" or has fewer than 3 source-anchored facts in its Findings section.
+
+Skip Step 3 entirely if no trigger fires. Continue to Step 4.
+
+Maximum 2 follow-up rounds total. If a sub-question still triggers after both rounds, mark it under **Contradictions & Open Questions** in the final output instead of papering over the gap with `[interpretation]`.
 
 ### Step 4: Synthesize and present
 
@@ -121,7 +125,20 @@ Present in chat using the structure from `references/output-format.md`. **Every 
 
 After presenting, ask: "Soll ich die Ergebnisse als Report speichern? (Datei wird unter ~/.claude/deep-research/ abgelegt)"
 
-If yes, write to `~/.claude/deep-research/YYYY-MM-DD-<topic-slug>.md`.
+If yes, write to `~/.claude/deep-research/YYYY-MM-DD-<topic-slug>.md` following these rules:
+
+- **topic-slug**: lowercase, ASCII-only (ä→ae, ö→oe, ü→ue, ß→ss, drop other accents), keep `[a-z0-9]` and replace runs of other characters with a single `-`, trim leading/trailing dashes, max 60 characters total
+- **Collision**: if the target file already exists, append `-2`, `-3`, ... before `.md` (e.g. `2026-04-28-caching-2.md`). Never overwrite.
+- **Frontmatter**: prepend YAML frontmatter so the file is later indexable, then a blank line, then the report:
+
+  ```yaml
+  ---
+  topic: <original topic verbatim>
+  date: YYYY-MM-DD
+  mode: <web | codebase | knowledge | mixed>
+  sources_count: <integer>
+  ---
+  ```
 
 ### Step 5: Metrics
 
