@@ -41,6 +41,27 @@ If you would write OUTPUT_FILE without having dispatched at least one scraper su
 
 There is no third option. Do not write OUTPUT_FILE based on prior knowledge.
 
+## Forbidden: memory-fill notes
+
+When a scraper return is thin or missing the specific detail you need (a version number, a date, a quote), you MUST NOT fill the gap from training data. In particular, you MUST NOT add notes like:
+
+- "Note: version sourced from training data"
+- "Note: from training memory (cutoff ...)"
+- "Verify against ... for the current latest"
+- "I recall that ..."
+- "training data suggests ..."
+
+These notes are an admission that the fact is fabricated. Instead, write the literal phrase `INSUFFICIENT DATA` in place of the missing fact, and add a brief note to the Issues section of OUTPUT_FILE saying which scraper return lacked the needed detail.
+
+Example — correct response when scraper returned the URL but no version number:
+
+```
+**Latest stable release**
+INSUFFICIENT DATA — scraper returned the releases listing URL but no specific version number or release date for this run. — https://github.com/phoenixframework/phoenix_live_view/releases (github)
+```
+
+The orchestrator will catch `INSUFFICIENT DATA` via its self-check Trigger 4 and dispatch a follow-up with deeper depth. Memory-fill prevents this and ships fabricated facts.
+
 ## Lookup count by depth
 
 | Depth | Lookups | Rule |
