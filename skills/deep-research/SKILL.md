@@ -95,7 +95,7 @@ Before dispatching, create the output directory: `mkdir -p /tmp/deep-research`
 
 Number the OUTPUT_FILE for each sub-agent (analyst-1.md, analyst-2.md, etc.). Adapt the QUESTION, MODE, and DEPTH fields per sub-question.
 
-For knowledge mode: skip this step, synthesize directly.
+For knowledge mode: do NOT skip this step. Spawn exactly 1 fact-check analyst with `DEPTH: standard` whose QUESTION is "verify these claims with web sources: [list your top 3 intended claims verbatim]". Do not synthesize before reading its file. Knowledge mode without a fact-check spawn is a bug — every claim still needs a source from `dr-scraper-web` lookups, just like in web mode.
 
 ### Step 3: Read results and self-check
 
@@ -112,7 +112,11 @@ Apply these **hard triggers** — if any fires for a sub-question, spawn one fol
 1. **Missing file** — `analyst-N.md` doesn't exist or is empty (scraper crash chain).
 2. **Source famine** — sub-question has fewer than 3 sources total in its file.
 3. **Source monoculture** — sub-question has only blog/forum sources and zero doc/github/code. Spawn the follow-up with a query biased toward authoritative sources.
-4. **Insufficient data marker** — analyst report contains the phrase "insufficient data" or has fewer than 3 source-anchored facts in its Findings section.
+4. **Insufficient data marker** — analyst report contains the phrase "insufficient data", "from training memory", "from training data", "training cutoff", "memory cutoff", "I recall", or has fewer than 3 source-anchored facts in its Findings section.
+5. **Fabrication smell** — split into two mechanical sub-checks. If either fires, treat the analyst's run as invalid: discard it, then dispatch a follow-up analyst AND require the follow-up to spawn at least one `dr-scraper-web` subagent. Do not synthesize from the suspect file.
+
+   - **5a. Stats/Sources mismatch** — the Stats line claims `N lookups` with N>=1, but: the Sources section has zero URLs, OR the count of distinct URLs in Sources is less than `N`, OR every URL in Sources is a bare domain root (e.g. `https://hex.pm/`, `https://github.com/`) without a deep path.
+   - **5b. No fetch evidence in content** — the file's Findings + Sources together contain not a single URL with at least one of these concrete markers: a path segment matching `/issues/<digits>`, `/pull/<digits>`, `/releases/tag/`, `/commit/<hash>`, a date stamp in the path (`/YYYY/MM/` or `-YYYY-MM-DD-`), a query string with `?v=` or `?id=`, a fragment anchor (`#section`), OR the Findings text contains zero quoted strings (no `"..."`, no `'...'`) and zero version numbers (no `v?\d+\.\d+(\.\d+)?`). A run with no quote, no date, no version, no deep URL path is indistinguishable from a memory dump.
 
 Skip Step 3 entirely if no trigger fires. Continue to Step 4.
 
