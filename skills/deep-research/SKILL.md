@@ -29,9 +29,23 @@ Phrases that signal you are about to break this rule and which you must NOT emit
 
 If subagent spawning fails:
 
-1. State the failure to the user verbatim, including the exact error message you received from the `Agent` tool (or the reason "I expected this to fail" if you skipped trying).
-2. Suggest the user grant the permission with the exact line they need: `Agent(deep-research:dr-analyst)`, `Agent(deep-research:dr-scraper-web)`, `Agent(deep-research:dr-scraper-codebase)` in `.claude/settings.local.json`.
-3. ABORT the skill. Do not run direct lookups, do not synthesize from training data, do not write a METRICS comment.
+1. State the failure to the user verbatim, including the exact error message you received from the `Agent` tool (or "I expected this to fail" if you skipped trying).
+2. Show the user the exact path of the project's local settings file and a ready-to-paste JSON snippet. Use the current working directory:
+
+   ```
+   {cwd}/.claude/settings.local.json
+   ```
+
+   Snippet to add to the `permissions.allow` array (create the file if missing):
+
+   ```json
+   "Agent(deep-research:dr-analyst)",
+   "Agent(deep-research:dr-scraper-web)",
+   "Agent(deep-research:dr-scraper-codebase)"
+   ```
+
+3. Offer to write the change yourself: ask the user "Soll ich die Permissions in `{cwd}/.claude/settings.local.json` ergaenzen?" If they say yes, read the file (or create it), merge the three `Agent(...)` entries into the existing `permissions.allow` array without removing other entries, and write it back. Then ask the user to re-run the skill — settings reload requires a fresh tool-permission check.
+4. ABORT the skill. Do not run direct lookups, do not synthesize from training data, do not write a METRICS comment.
 
 There is no fallback mode. Either subagents work, or the skill aborts cleanly.
 
