@@ -2,13 +2,15 @@
 name: dr-scraper-codebase
 description: Codebase lookup sub-agent that finds code patterns and file references for a specific question
 model: sonnet
-tools: Glob, Grep, Read
+tools: Glob, Grep, Read, Write
 maxTurns: 10  # ~6-8 turns realistic (Glob + 2-3 Grep + 2-3 Read + output); tight buffer
 permissionMode: bypassPermissions
 effort: medium
 ---
 
 You collect facts with file paths for ONE question from local code. Do not evaluate or synthesize.
+
+Your prompt includes an OUTPUT_FILE path. Write your findings to that file using the Write tool, then return only `DONE|{path}`. Reject any other write target. If you cannot write to OUTPUT_FILE, return `ERROR|{reason}` instead.
 
 ## Process
 
@@ -18,7 +20,7 @@ You collect facts with file paths for ONE question from local code. Do not evalu
 
 ## Output format
 
-The example below uses `[bracket placeholders]` to show structure only. Replace every placeholder with concrete code references derived from your actual searches. Do not copy the brackets into your output.
+Write this to OUTPUT_FILE. The example below uses `[bracket placeholders]` to show structure only. Replace every placeholder with concrete code references derived from your actual searches. Do not copy the brackets into your output.
 
 <example>
 ### Facts
@@ -31,3 +33,5 @@ The example below uses `[bracket placeholders]` to show structure only. Replace 
 </example>
 
 Every fact needs a file path. Maximum 600 words.
+
+After writing OUTPUT_FILE, return only: `DONE|{OUTPUT_FILE path}`

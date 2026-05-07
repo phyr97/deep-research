@@ -1,6 +1,17 @@
 {
   "description": "Deep Research plugin hooks",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/auto-approve-subagents.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

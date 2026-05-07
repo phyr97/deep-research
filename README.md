@@ -30,7 +30,9 @@ claude --plugin-dir /path/to/deep-research
 
 ### Recommended: agent permissions
 
-Claude Code has known issues with `bypassPermissions` for subagents (see [#29110](https://github.com/anthropics/claude-code/issues/29110), [#24073](https://github.com/anthropics/claude-code/issues/24073)). To ensure research agents can reliably access their tools, add these entries to your global `~/.claude/settings.json`:
+The plugin includes a `PreToolUse` hook that auto-approves `Agent(deep-research:dr-scraper-*)` spawns from the orchestrator, so most users don't need any additional setup.
+
+If your environment disables plugin hooks or you want explicit permissions in `settings.json`, allow the following:
 
 ```json
 {
@@ -40,11 +42,15 @@ Claude Code has known issues with `bypassPermissions` for subagents (see [#29110
       "WebFetch",
       "Glob",
       "Grep",
-      "Read"
+      "Read",
+      "Agent(deep-research:dr-scraper-web)",
+      "Agent(deep-research:dr-scraper-codebase)"
     ]
   }
 }
 ```
+
+Background: Claude Code has known issues with `bypassPermissions` for subagents (see [#29110](https://github.com/anthropics/claude-code/issues/29110), [#24073](https://github.com/anthropics/claude-code/issues/24073)). The flat orchestrator → scraper architecture in v2.2.0 sidesteps these issues by avoiding nested `Agent` calls entirely.
 
 ## Usage
 
@@ -61,20 +67,27 @@ Claude Code has known issues with `bypassPermissions` for subagents (see [#29110
 ```
 Orchestrator (Opus, Skill)
   │
-  ├── Sub-agent 1 (Sonnet, dr-a1) ──→ spawns 1-6 lookups (dr-sw, dr-sc)
-  ├── Sub-agent 2 (Sonnet, dr-a1) ──→ spawns 1-6 lookups, retries if thin
-  ├── Self-check ──→ reviews coverage, spawns follow-up sub-agents if needed
+  ├── For each sub-question:
+  │     ├── dr-scraper-web (Sonnet)   ──→ writes facts file
+  │     ├── dr-scraper-web (Sonnet)   ──→ writes facts file
+  │     └── dr-scraper-codebase (S.)  ──→ writes facts file
+  │
+  ├── Self-check ──→ reviews coverage, spawns follow-up scrapers if thin
   └── Synthesize ──→ merge findings by theme, list source URLs, write metrics
 ```
 
-Agent .md files contain both frontmatter (model, tools, permissions) and a system prompt with output format examples. The orchestrator also passes the same key instructions via the `prompt` parameter when spawning agents, reinforcing the output format through both channels.
+Flat dispatch (orchestrator → scrapers, one hop). The previous `dr-analyst` middle layer was removed in v2.2.0 because nested `Agent` calls do not reliably propagate tool access through Claude Code's permission model (see [#29110](https://github.com/anthropics/claude-code/issues/29110)).
+
+Agent .md files contain frontmatter (model, tools, permissions) plus the system prompt that defines output format and process. The orchestrator passes only the question, depth, constraints, and output path via the spawn `prompt` parameter — the agent body provides format and rules.
+
+A `PreToolUse` hook auto-approves `Agent(deep-research:...)` spawns from the orchestrator so users don't need to add Agent permissions manually.
 
 ### Research modes
 
-- Web: external information via WebSearch/WebFetch (depth-controlled)
-- Codebase: local code analysis via Read/Glob/Grep
-- Knowledge: Opus synthesizes directly from training data (no sub-agent dispatch)
-- Mixed: sub-agents spawn both web and codebase lookups
+- Web: external information via dr-scraper-web (depth-controlled)
+- Codebase: local code analysis via dr-scraper-codebase
+- Knowledge: orchestrator drafts top claims, then dispatches verification scrapers — no claim ships without a fetched source
+- Mixed: orchestrator spawns both web and codebase scrapers per sub-question
 
 ## Plugin structure
 
@@ -84,16 +97,18 @@ deep-research/
     plugin.json                              # Plugin manifest
   skills/
     deep-research/
-      SKILL.md                               # Orchestrator (contains all agent prompts)
+      SKILL.md                               # Orchestrator
       references/                            # Output format, research modes, error handling
   commands/
     deep-research.md                         # /deep-research slash command
   agents/
-    dr-analyst.md                            # Research sub-agent (Sonnet)
-    dr-scraper-web.md                        # Web lookup sub-agent (Sonnet)
-    dr-scraper-codebase.md                   # Codebase lookup sub-agent (Sonnet)
+    dr-scraper-web.md                        # Web scraper (Sonnet)
+    dr-scraper-codebase.md                   # Codebase scraper (Sonnet)
   hooks/
-    hooks.json                               # Stop hook for metrics collection
+    hooks.json                               # PreToolUse auto-approve + Stop metrics
+  scripts/
+    auto-approve-subagents.sh                # PreToolUse hook
+    save-metrics.sh                          # Stop hook
   scripts/
     save-metrics.sh                          # Extracts metrics from output to jsonl
 ```
