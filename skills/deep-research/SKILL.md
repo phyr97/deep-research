@@ -102,23 +102,39 @@ Modus: [Web / Codebase / Knowledge / Mixed]
 Dispatch-Budget: N scrapers total (Sweet-Spot ~12, Ceiling ~15)
 ```
 
+For `mode: knowledge`, the plan has exactly one synthetic sub-question — frame it as the verification of the top-3 claims you intend to make:
+
+```
+1. Verifikation der 3 Kernaussagen (standard) — 2 scrapers
+   Warum standard: knowledge-mode-Pflicht-Faktencheck, nicht überspringbar
+   Angles: Aussage 1 (X) · Aussage 2 (Y) · Aussage 3 (Z)
+
+Dispatch-Budget: 2 scrapers total
+```
+
 Keep the rationale and angles short — the user wants to scan, not read prose. One line each is enough.
 
 ### Step 1.5: Approval gate
 
 Before dispatching, ask the user once whether the plan is OK. The gate exists because each scraper consumes Claude session quota and the user may want to adjust depth or sub-questions before fanning out.
 
-Skip this gate **only** if any of the following is true:
-- The user's topic contains the literal token `--yes` or `--no-confirm`
-- The user already explicitly confirmed in the same conversation turn (e.g. "leg los", "go", "ja mach")
-- Total dispatch budget is `1` scraper (single shallow lookup, gate would be pure ceremony)
+Skip this gate **only** if any of these literal conditions hold (no fuzzy matching, no "or similar" — be strict, otherwise the gate becomes meaningless):
+- The user's topic string contains the exact token `--yes` or `--no-confirm`
+- Total dispatch budget is exactly `1` scraper (single shallow lookup, gate would be pure ceremony)
+
+If you are unsure whether the user already confirmed earlier in the conversation, ask anyway. False-positive skips defeat the gate's purpose.
 
 Otherwise, ask via `AskUserQuestion`:
 
 > Frage: "Plan OK so? N scrapers werden parallel gestartet."
-> Optionen: "Ja, loslegen" | "Anpassen (sag wie)" | "Abbrechen"
+> Optionen: "Ja, loslegen" | "Anpassen" | "Abbrechen"
 
-If the user picks "Anpassen", let them tell you what to change (depth, scraper count, sub-questions, mode, **angles** if the rationale revealed wrong-direction framing), update the plan, re-present it, and ask again. Do not loop more than 3 times — if the user is still unsure after that, abort and ask them to re-invoke when ready.
+If the user picks "Anpassen":
+1. If they spelled out what to change in their answer notes, apply that change.
+2. If they only picked "Anpassen" without detail, ask **one** targeted follow-up: "Was soll geändert werden? (Sub-Frage, depth, Scraper-Anzahl, mode, oder einzelne Angles)" — do NOT re-present the unchanged plan, that wastes a turn.
+3. Update the plan, re-present it (with the same dispatch-budget breakdown), ask the gate again.
+
+Repeat up to 5 adjustment rounds. If the user is still adjusting after the 5th, suggest aborting and re-invoking with a clearer topic. Don't enforce a hard stop — the loop limit is a soft hint that something deeper is unclear.
 
 If "Abbrechen": stop cleanly, no METRICS comment.
 
@@ -230,11 +246,12 @@ The new fields after `follow_up_needed` are for compliance tracking — they let
 - `claims_total`: integer count of factual statements in your final response (denominator for compliance)
 - `constraints_used`: boolean — did Step 0 produce a CONSTRAINTS block that was passed to scrapers?
 - `knowledge_factcheck_done`: boolean — for `mode=knowledge`, did you spawn verification scrapers with web lookups? Use `null` for non-knowledge modes.
+- `approval_gate_action`: one of `"skipped"` (skip-condition matched), `"approved"` (user picked "Ja, loslegen"), `"adjusted"` (user went through one or more "Anpassen" rounds before approving), or `"cancelled"` (user picked "Abbrechen" — in that case you should not be emitting METRICS at all, this value exists only to make the schema complete).
 
 Template:
 
 ```
-<!-- METRICS:{"topic":"...","mode":"...","scrapers":N,"scraper_errors":N,"sources_total":N,"sources_by_type":{"doc":N,"blog":N,"forum":N,"github":N,"code":N},"gaps_found":N,"self_check_passed":BOOL,"follow_up_needed":BOOL,"scraper_count_per_subquestion":[{"depth":"deep","count":4}],"depth_corridor_violations":0,"claims_with_citation":N,"claims_total":N,"constraints_used":BOOL,"knowledge_factcheck_done":BOOL_OR_NULL} -->
+<!-- METRICS:{"topic":"...","mode":"...","scrapers":N,"scraper_errors":N,"sources_total":N,"sources_by_type":{"doc":N,"blog":N,"forum":N,"github":N,"code":N},"gaps_found":N,"self_check_passed":BOOL,"follow_up_needed":BOOL,"scraper_count_per_subquestion":[{"depth":"deep","count":4}],"depth_corridor_violations":0,"claims_with_citation":N,"claims_total":N,"constraints_used":BOOL,"knowledge_factcheck_done":BOOL_OR_NULL,"approval_gate_action":"approved"} -->
 ```
 
 ## Context window protection

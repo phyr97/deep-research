@@ -78,6 +78,8 @@ Orchestrator (Opus, Skill)
 
 Flat dispatch (orchestrator → scrapers, one hop). The previous `dr-analyst` middle layer was removed in v2.2.0 because nested `Agent` calls do not reliably propagate tool access through Claude Code's permission model (see [#29110](https://github.com/anthropics/claude-code/issues/29110)).
 
+Before scrapers are dispatched, the orchestrator presents a plan with the dispatch budget (count + per-sub-question depth, rationale, and angles) and asks for approval via `AskUserQuestion`. The user can approve, adjust (sub-question, depth, scraper count, mode, angles), or cancel. The gate is skipped only when the topic contains the literal `--yes` / `--no-confirm` token or when the budget is a single scraper.
+
 Agent .md files contain frontmatter (model, tools, permissions) plus the system prompt that defines output format and process. The orchestrator passes only the question, depth, constraints, and output path via the spawn `prompt` parameter — the agent body provides format and rules.
 
 A `PreToolUse` hook auto-approves `Agent(deep-research:...)` spawns from the orchestrator so users don't need to add Agent permissions manually.
