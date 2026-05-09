@@ -77,18 +77,32 @@ Break the topic into 2-4 sub-questions. Assign each a depth level:
 - `standard`: regular sub-questions (1-2)
 - `shallow`: peripheral questions (0-2)
 
-Present the plan together with the dispatch-budget breakdown so the user sees exactly how many scrapers will fan out before any token is spent. The scraper count per sub-question follows the depth rule from Step 2 — pick a concrete number inside the corridor (use the lower bound by default, raise only if the angle genuinely needs more coverage):
+Present the plan together with the dispatch-budget breakdown **and** a one-line rationale per sub-question so the user can spot a wrong-direction research framing before any token is spent. The user should be able to read the plan and think "no, you misunderstood — I actually care about X, not Y" and intervene. Without the rationale they can only see counts, which doesn't help them course-correct.
+
+For each sub-question include:
+- The depth level (`shallow` / `standard` / `deep`)
+- The concrete scraper count inside the depth corridor (use the lower bound by default, raise only if the angle genuinely needs more coverage)
+- **Why this depth**: one short clause — is it the core decision-driver, a peripheral fact-check, a sanity-check on a known fact?
+- **Angles**: the distinct sub-question framings each scraper will pursue (so the user sees what gets searched, not just how many)
 
 ```
 Forschungsplan: "[Topic]"
 Modus: [Web / Codebase / Knowledge / Mixed]
 
 1. [Sub-question] (deep) — N scrapers
+   Warum deep: [core decision driver / multiple competing answers / etc.]
+   Angles: [angle 1] · [angle 2] · [angle 3]
 2. [Sub-question] (standard) — N scrapers
+   Warum standard: [regular sub-question, established sources expected]
+   Angles: [angle 1] · [angle 2]
 3. [Sub-question] (shallow) — N scrapers
+   Warum shallow: [peripheral fact-check / known terrain]
+   Angles: [angle 1]
 
 Dispatch-Budget: N scrapers total (Sweet-Spot ~12, Ceiling ~15)
 ```
+
+Keep the rationale and angles short — the user wants to scan, not read prose. One line each is enough.
 
 ### Step 1.5: Approval gate
 
@@ -104,7 +118,7 @@ Otherwise, ask via `AskUserQuestion`:
 > Frage: "Plan OK so? N scrapers werden parallel gestartet."
 > Optionen: "Ja, loslegen" | "Anpassen (sag wie)" | "Abbrechen"
 
-If the user picks "Anpassen", let them tell you what to change (depth, scraper count, sub-questions, mode), update the plan, re-present it, and ask again. Do not loop more than 3 times — if the user is still unsure after that, abort and ask them to re-invoke when ready.
+If the user picks "Anpassen", let them tell you what to change (depth, scraper count, sub-questions, mode, **angles** if the rationale revealed wrong-direction framing), update the plan, re-present it, and ask again. Do not loop more than 3 times — if the user is still unsure after that, abort and ask them to re-invoke when ready.
 
 If "Abbrechen": stop cleanly, no METRICS comment.
 
