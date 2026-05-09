@@ -77,16 +77,36 @@ Break the topic into 2-4 sub-questions. Assign each a depth level:
 - `standard`: regular sub-questions (1-2)
 - `shallow`: peripheral questions (0-2)
 
-Present the plan:
+Present the plan together with the dispatch-budget breakdown so the user sees exactly how many scrapers will fan out before any token is spent. The scraper count per sub-question follows the depth rule from Step 2 — pick a concrete number inside the corridor (use the lower bound by default, raise only if the angle genuinely needs more coverage):
 
 ```
 Forschungsplan: "[Topic]"
 Modus: [Web / Codebase / Knowledge / Mixed]
 
-1. [Sub-question] (deep)
-2. [Sub-question] (standard)
-3. [Sub-question] (shallow)
+1. [Sub-question] (deep) — N scrapers
+2. [Sub-question] (standard) — N scrapers
+3. [Sub-question] (shallow) — N scrapers
+
+Dispatch-Budget: N scrapers total (Sweet-Spot ~12, Ceiling ~15)
 ```
+
+### Step 1.5: Approval gate
+
+Before dispatching, ask the user once whether the plan is OK. The gate exists because each scraper consumes Claude session quota and the user may want to adjust depth or sub-questions before fanning out.
+
+Skip this gate **only** if any of the following is true:
+- The user's topic contains the literal token `--yes` or `--no-confirm`
+- The user already explicitly confirmed in the same conversation turn (e.g. "leg los", "go", "ja mach")
+- Total dispatch budget is `1` scraper (single shallow lookup, gate would be pure ceremony)
+
+Otherwise, ask via `AskUserQuestion`:
+
+> Frage: "Plan OK so? N scrapers werden parallel gestartet."
+> Optionen: "Ja, loslegen" | "Anpassen (sag wie)" | "Abbrechen"
+
+If the user picks "Anpassen", let them tell you what to change (depth, scraper count, sub-questions, mode), update the plan, re-present it, and ask again. Do not loop more than 3 times — if the user is still unsure after that, abort and ask them to re-invoke when ready.
+
+If "Abbrechen": stop cleanly, no METRICS comment.
 
 ### Step 2: Dispatch scrapers
 
