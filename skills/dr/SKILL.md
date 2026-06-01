@@ -1,5 +1,5 @@
 ---
-name: deep-research
+name: dr
 description: |
   Deep research across web, codebase, and knowledge domains with auto-scaling.
   Use when: "research", "deep research", "investigate", "compare", "analyze across",
@@ -180,7 +180,7 @@ For codebase scrapers: `subagent_type: "deep-research:dr-scraper-codebase"`. CON
 
 The full process and output format live in the agent bodies (`agents/dr-scraper-web.md`, `agents/dr-scraper-codebase.md`). Do not duplicate them in the spawn prompt — the subagent_type loads them automatically.
 
-Before dispatching, create a per-run output directory under `/tmp/deep-research/<epoch-seconds>/` (e.g. `mkdir -p /tmp/deep-research/$(date +%s)`) and use that directory for OUTPUT_FILE paths. The per-run subdir prevents file collisions when the user runs `/deep-research` in two sessions simultaneously.
+Before dispatching, create a per-run output directory under `/tmp/deep-research/<epoch-seconds>/` (e.g. `mkdir -p /tmp/deep-research/$(date +%s)`) and use that directory for OUTPUT_FILE paths. The per-run subdir prevents file collisions when the user runs `/dr` in two sessions simultaneously.
 
 OUTPUT_FILE naming convention: `<run-dir>/sq{N}-{type}-{M}.md` where N=sub-question index, type=`web` or `codebase`, M=scraper index within that sub-question. Example: `/tmp/deep-research/1746619200/sq2-web-3.md` is the 3rd web scraper for sub-question 2. Adapt QUESTION, DEPTH, and CONSTRAINTS per scraper.
 
