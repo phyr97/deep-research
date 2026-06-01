@@ -15,10 +15,13 @@ A statement without one of these tags is a bug. Either find the source, mark it 
 
 4-7 key findings. Each one:
 
-### N. [Key Finding Title]
+### N. [Key Finding Title]  ·  Confidence: high | medium | low
 [2-4 sentences: what, why it matters, context.] [^N]
 
 Every Kernpunkt ends with at least one citation. If the finding rests on multiple sources, list them: `[^1][^3]`.
+
+Confidence comes from Step 5 verification (verdict + source tier + vote agreement).
+Findings that skipped verification (supporting/tangential, or codebase mode) default to `medium`.
 
 ## Executive Summary
 
@@ -31,6 +34,16 @@ Organize by theme (not by scraper or sub-question). Each statement of fact ends 
 ## Contradictions & Open Questions
 
 Areas where sources disagree or where the research could not reach a clear conclusion. Cite the conflicting sources: "Source A claims X [^2], source B claims Y [^5]."
+
+## Verifikation
+
+Only present when the verify stage ran (Step 5). Three short lists, omit any that is empty:
+
+- **Widerlegt (contradicted):** claims removed from the findings, each with its
+  counter-source. "Claim X — widerlegt durch [^N]."
+- **Unsicher (uncertain):** claims kept with low confidence and a one-line caveat.
+- **Nicht verifiziert:** central claims dropped by the hard cap, or claims whose verifier
+  failed. State which.
 
 ## Sources
 
