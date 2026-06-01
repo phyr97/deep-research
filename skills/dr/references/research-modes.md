@@ -29,3 +29,12 @@ The orchestrator assigns a depth level per sub-question. The level controls (a) 
 | shallow | 1-2 | 2 | 0 | Fact-checks, definitions, peripheral questions |
 | standard | 2-4 | 3-4 | 1-2 | Regular research sub-questions |
 | deep | 3-5 | 5-6 | up to 3 | Core question, needs thorough coverage |
+
+## Verification (Step 5)
+
+After scrapers and self-check, central claims are verified by `dr-verifier` subagents
+(web/knowledge/mixed modes only; codebase claims are not web-verifiable). The stage is
+hard-capped per tier (lite 8 claims × 1 voter, ceiling 25 total subagents). Verdicts are
+balanced: confirmed / uncertain / contradicted, no default-refute. Knowledge mode's
+mandatory fact-check is satisfied by this stage — its claims flow through the same
+verifier instead of a separate ad-hoc check.
