@@ -191,6 +191,15 @@ The floor for `deep` is hard. The ceilings are soft — exceed them only if the 
 
 Reason: beyond ~10 parallel subagents, each additional one delivers diminishing marginal coverage while linearly increasing token cost and timeout risk.
 
+**Hard subagent cap (tier-dependent).** Before dispatching, compute the planned total:
+`scrapers + planned verifiers`. The planned verifier count is the number of `central`
+claims you expect to verify (capped at the tier's verify cap) times the voter count. If
+`scrapers + planned_verifiers` exceeds the tier hard cap (lite 25 / standard 35 /
+thorough 55), trim in this order until it fits: (1) reduce verify claims (drop
+lowest-centrality / weakest-source first), (2) only then reduce scraper count. Record
+`hard_cap_hit: true` in METRICS if you trimmed. The cap is absolute; never exceed it,
+regardless of flags.
+
 Each scraper handles ONE narrow angle of its sub-question. Phrase angles distinctly so scrapers don't search for the same thing.
 
 Launch all scrapers across all sub-questions in parallel. Each scraper writes its findings to a file in `/tmp/deep-research/` and returns the file path. Files survive context compaction; OS cleans them on reboot.
@@ -245,7 +254,77 @@ Skip Step 3 entirely if no trigger fires. Continue to Step 4.
 
 Maximum 2 follow-up rounds total per sub-question. If a sub-question still triggers after both rounds, mark it under **Contradictions & Open Questions** in the final output instead of papering over the gap with `[interpretation]`.
 
-### Step 4: Synthesize and present
+### Step 4: Extract candidate claims
+
+After Step 3 (self-check), read the scraper files and extract candidate claims. This is
+orchestrator work — spawn no agents here.
+
+For each concrete, falsifiable statement in the scraper files, record:
+- **claim**: one checkable sentence (not a vague generality)
+- **quote**: the verbatim `quote:` snippet from the scraper file if present; else leave
+  empty (the verifier will fetch the source itself)
+- **source_url** + **source_type**
+- **centrality**: `central` (directly answers the research question), `supporting`
+  (useful context), or `tangential` (peripheral)
+
+Only `central` claims enter Step 5. `supporting` and `tangential` claims flow unverified
+into synthesis exactly as today (no confidence boost).
+
+Skip Step 5 entirely if: `--no-verify` was passed, OR there are zero `central` claims, OR
+the mode is `codebase` (codebase claims are not web-verifiable; they keep `medium`
+confidence). In `mixed` mode, only `central` claims whose source is a URL (not a file
+path) are eligible.
+
+### Step 5: Verify central claims (capped)
+
+Select the eligible `central` claims, capped at the tier's verify cap (lite 8, standard
+10, thorough 12). If there are more eligible central claims than the cap, keep the ones
+with the strongest centrality and best source type; list the dropped ones under the
+report's Verifikation section as "nicht verifiziert (Cap)".
+
+For each selected claim, spawn `voters` `dr-verifier` subagents (voters = 1 for lite, or
+3 for thorough / `standard --verify3`). Respect the hard cap from Step 2 — if
+`scrapers + claims*voters` would exceed it, reduce the claim count first.
+
+Write verifier outputs into the same per-run directory used for scrapers, named
+`<run-dir>/verify-{claimIndex}-{voterIndex}.md`.
+
+Spawn pattern per voter:
+
+<example>
+Agent(
+  subagent_type: "deep-research:dr-verifier",
+  model: "sonnet",
+  prompt: "Verify one claim. Follow your agent instructions for output format and return value.
+
+CLAIM: Stripe charges 0.4% for ACH payments in 2026.
+QUOTE: \"ACH Direct Debit ... 0.4% per transaction (capped at $5.00)\"
+SOURCE_URL: https://stripe.com/pricing
+SOURCE_TYPE: doc
+QUESTION: What are Stripe's 2026 payment fees for SaaS?
+OUTPUT_FILE: /tmp/deep-research/<run-dir>/verify-1-1.md"
+)
+</example>
+
+Launch all verifiers in parallel. Each returns only `DONE|{path}`; read the verdict files
+afterward.
+
+**Aggregation.** For a single voter, the verdict is that voter's verdict. For 3 voters,
+take the majority: `contradicted` only if ≥2 voters say `contradicted`; otherwise the
+finding survives with the majority of `confirmed`/`uncertain`. Map to confidence:
+- all/most `confirmed` + primary source → `high`
+- `confirmed` with secondary source, or split votes → `medium`
+- `uncertain`, or single weak source → `low`
+
+`contradicted` claims are removed from the main findings and listed under the report's
+Verifikation section with their counter-source.
+
+**Same no-fallback rule as scrapers.** If spawning `dr-verifier` fails for any reason, you
+MUST NOT verify claims yourself with direct WebSearch/WebFetch, and MUST NOT substitute
+another agent type. Either the verifier works, or you skip verification for that claim and
+mark it `unverifiziert` in the Verifikation section. See `references/error-handling.md`.
+
+### Step 6: Synthesize and present
 
 Synthesize findings across the scraper files by theme, not by sub-question and not by scraper.
 
@@ -268,7 +347,7 @@ If yes, write to `~/.claude/deep-research/YYYY-MM-DD-<topic-slug>.md` following 
   ---
   ```
 
-### Step 5: Metrics
+### Step 7: Metrics
 
 End your final response with the METRICS comment so the stop hook can record the run.
 
@@ -294,6 +373,8 @@ Template:
 |-------|-------------|-----------|
 | Scraper return values | DONE|path only | ~100 words |
 | File reads | 600 words x ~12 files max | ~7,200 words |
+| Verifier return values | DONE|path only | ~100 words |
+| Verifier file reads | ~120 words x ≤24 files | ~2,900 words |
 
 Scrapers return only `DONE|{path}`. The orchestrator reads files on demand. Each scraper file is capped at ~600 words; for a typical 4-sub-question / 3-scraper-each run that's ~12 files.
 
