@@ -65,12 +65,18 @@ Write this to OUTPUT_FILE. The example below uses `[bracket placeholders]` to sh
 <example>
 ### Facts
 1. [Concrete one-sentence fact relevant to the question, with quantitative or named detail when present in the source.] — [https://primary-source.example/path] ([type])
+   quote: "[verbatim snippet from the fetched source that supports this fact]"
 2. [Second fact from a different angle, often a different source type.] — [https://another-source.example/article] ([type])
+   quote: "[verbatim snippet]"
 3. [Third fact, possibly with a number, version, or quoted phrase from the source.] — [https://github.com/org/repo] ([type])
 
 ### Issues
 - [Only fill in if a source returned 4xx/5xx or was inaccessible. Otherwise omit this section.]
 </example>
+
+The `quote:` line is optional but strongly preferred: it lets the orchestrator verify the
+fact without re-fetching. Include it whenever you have a verbatim snippet. Never fabricate
+a quote — omit the line if you do not have a real snippet from the fetched content.
 
 Every fact needs a source URL. No URL, no fact. Maximum 600 words.
 

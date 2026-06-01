@@ -25,12 +25,18 @@ Write this to OUTPUT_FILE. The example below uses `[bracket placeholders]` to sh
 <example>
 ### Facts
 1. [One-sentence statement about a function, configuration, pattern, or relationship found in the code.] — [path/to/file.ext]:[LINE] (code)
+   quote: "[verbatim line from the file that supports this fact]"
 2. [Second fact, often referencing a different file or layer.] — [another/path/file.ext]:[LINE] (code)
+   quote: "[verbatim line]"
 3. [Third fact, possibly cross-referencing or showing how two pieces connect.] — [yet/another/path.ext]:[LINE] (code)
 
 ### Issues
 - [Only fill in if expected files were missing or unreadable. Otherwise omit this section.]
 </example>
+
+The `quote:` line is optional but strongly preferred: it lets the orchestrator verify the
+fact without re-reading the file. Include a verbatim line from the file whenever you can.
+Never fabricate a quote — omit the line if you do not have a real snippet.
 
 Every fact needs a file path. Maximum 600 words.
 
