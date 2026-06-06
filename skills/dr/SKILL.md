@@ -223,7 +223,7 @@ For codebase scrapers: `subagent_type: "deep-research:dr-scraper-codebase"`. CON
 
 The full process and output format live in the agent bodies (`agents/dr-scraper-web.md`, `agents/dr-scraper-codebase.md`). Do not duplicate them in the spawn prompt — the subagent_type loads them automatically.
 
-Before dispatching, create a per-run output directory under `/tmp/deep-research/<epoch-seconds>/` (e.g. `mkdir -p /tmp/deep-research/$(date +%s)`) and use that directory for OUTPUT_FILE paths. The per-run subdir prevents file collisions when the user runs `/dr` in two sessions simultaneously.
+Before dispatching, create a per-run output directory under `/tmp/deep-research/<epoch-seconds>/` (e.g. `mkdir -p /tmp/deep-research/$(date +%s)`) and use that directory for OUTPUT_FILE paths. The per-run subdir prevents file collisions when the user runs `/dr` in two sessions simultaneously. Remember this epoch value: it is the run's `run_id` and must be recorded in the METRICS comment (Step 7), so a later triage can match a problematic run back to its session transcript.
 
 OUTPUT_FILE naming convention: `<run-dir>/sq{N}-{type}-{M}.md` where N=sub-question index, type=`web` or `codebase`, M=scraper index within that sub-question. Example: `/tmp/deep-research/1746619200/sq2-web-3.md` is the 3rd web scraper for sub-question 2. Adapt QUESTION, DEPTH, and CONSTRAINTS per scraper.
 
@@ -353,6 +353,7 @@ End your final response with the METRICS comment so the stop hook can record the
 
 The new fields after `follow_up_needed` are for compliance tracking — they let us measure whether the depth corridor and citation rules are actually followed across many runs. Compute them from your own dispatch records and your final output:
 
+- `run_id`: the epoch-seconds value from your per-run output directory (Step 2, e.g. `"1746619200"`). Always include it — it lets a later triage match a problematic run back to its session transcript. Without it, a bad run is invisible in the aggregated metrics.
 - `scraper_count_per_subquestion`: list of `{depth, count}` — one entry per sub-question with the scraper count you dispatched for it
 - `depth_corridor_violations`: integer count of sub-questions that broke the corridor (deep with <3 scrapers, shallow with >2, standard outside 2-4)
 - `claims_with_citation`: integer count of factual statements ending with `[^N]` or `[interpretation]` in your final response
@@ -375,7 +376,7 @@ Verify-stage fields (v3):
 Template:
 
 ```
-<!-- METRICS:{"topic":"...","mode":"...","scrapers":N,"scraper_errors":N,"sources_total":N,"sources_by_type":{"doc":N,"blog":N,"forum":N,"github":N,"code":N},"gaps_found":N,"self_check_passed":BOOL,"follow_up_needed":BOOL,"scraper_count_per_subquestion":[{"depth":"deep","count":4}],"depth_corridor_violations":0,"claims_with_citation":N,"claims_total":N,"constraints_used":BOOL,"knowledge_factcheck_done":BOOL_OR_NULL,"approval_gate_action":"approved","verify_tier":"lite","verify_voters":1,"claims_verified":N,"claims_confirmed":N,"claims_uncertain":N,"claims_contradicted":N,"total_subagents":N,"hard_cap_hit":false} -->
+<!-- METRICS:{"run_id":"<epoch-seconds>","topic":"...","mode":"...","scrapers":N,"scraper_errors":N,"sources_total":N,"sources_by_type":{"doc":N,"blog":N,"forum":N,"github":N,"code":N},"gaps_found":N,"self_check_passed":BOOL,"follow_up_needed":BOOL,"scraper_count_per_subquestion":[{"depth":"deep","count":4}],"depth_corridor_violations":0,"claims_with_citation":N,"claims_total":N,"constraints_used":BOOL,"knowledge_factcheck_done":BOOL_OR_NULL,"approval_gate_action":"approved","verify_tier":"lite","verify_voters":1,"claims_verified":N,"claims_confirmed":N,"claims_uncertain":N,"claims_contradicted":N,"total_subagents":N,"hard_cap_hit":false} -->
 ```
 
 ## Context window protection
